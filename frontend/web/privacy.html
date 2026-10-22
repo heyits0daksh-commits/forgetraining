@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — FORGE</title>
+<link rel="icon" href="/assets/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .legal-wrap{max-width:760px;margin:0 auto;padding:40px 20px 80px;}
+  .legal-wrap h1{font-family:var(--mono);font-size:22px;margin-bottom:6px;}
+  .legal-wrap .updated{color:var(--muted-dim);font-size:12.5px;margin-bottom:28px;}
+  .legal-wrap h2{font-size:16px;margin:28px 0 10px;color:var(--gold);}
+  .legal-wrap p, .legal-wrap li{font-size:14px;line-height:1.7;color:var(--text);}
+  .legal-wrap ul{padding-left:20px;margin:8px 0 8px;}
+  .legal-wrap .back{display:inline-block;margin-bottom:24px;font-size:13px;color:var(--muted-dim);text-decoration:none;}
+  .legal-wrap .back:hover{color:var(--gold);}
+  .legal-wrap table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:13px;}
+  .legal-wrap th,.legal-wrap td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border,#333);vertical-align:top;}
+  .legal-wrap th{color:var(--muted-dim);font-weight:600;}
+  .legal-wrap .todo{color:var(--danger);font-size:12.5px;}
+</style>
+</head>
+<body>
+<div class="legal-wrap">
+  <a class="back" href="index.html">&larr; Back to FORGE</a>
+  <h1>Privacy Policy</h1>
+  <div class="updated">Last updated: August 21, 2026</div>
+
+  <p>This policy explains what data FORGE collects, why, and how it's handled. It covers the FORGE app (web/PWA and mobile builds) and its backend service.</p>
+
+  <h2>Data We Collect</h2>
+  <table>
+    <tr><th>Data</th><th>Why we collect it</th></tr>
+    <tr><td>Email address, hashed password</td><td>To create and secure your account. We never store your password in plain text.</td></tr>
+    <tr><td>Display name (optional)</td><td>To personalize the app.</td></tr>
+    <tr><td>Sport, experience level, available equipment</td><td>To generate relevant programs and exercise suggestions.</td></tr>
+    <tr><td>Reported injuries / conditions</td><td>To filter out unsafe exercises. This is self-reported by you, not medical data collected from a provider.</td></tr>
+    <tr><td>Saved workouts, saved programs, session logs (sets, reps, weight, RPE, soreness, fatigue, notes)</td><td>To generate progressions, charts, and let you track progress over time.</td></tr>
+    <tr><td>Basic usage/technical data (e.g. login sessions, refresh tokens)</td><td>To keep you securely signed in.</td></tr>
+  </table>
+
+  <p>Injury and condition information you enter is treated as sensitive. It is used only to power the app's exercise-filtering logic and is not sold, shared with advertisers, or used for any purpose beyond generating your programs.</p>
+
+  <h2>How Data Is Stored</h2>
+  <p>Account and training data is stored in a managed Postgres database. Data persists across sessions and devices so you can pick up where you left off. Passwords are stored as salted hashes, never in plain text.</p>
+
+  <h2>Third Parties</h2>
+  <p>FORGE may optionally use a third-party AI provider to generate coach-style insight text based on your training data (for example, a summary of your session). This is an opt-in/optional feature; when enabled, relevant training context is sent to the provider solely to generate that insight, and is not used by us for any other purpose. Exercise demo videos are looked up via YouTube; no personal account data is sent to YouTube as part of that lookup.</p>
+
+  <h2>What We Don't Do</h2>
+  <ul>
+    <li>We don't sell your personal data.</li>
+    <li>We don't share your injury/health information with advertisers or data brokers.</li>
+    <li>We don't use your data to train unrelated third-party models beyond the optional AI-insight feature described above.</li>
+  </ul>
+
+  <h2>Your Choices</h2>
+  <ul>
+    <li>You can edit or delete your saved workouts, programs, and logged sessions from within the app.</li>
+    <li>You can request deletion of your account and associated data by contacting us (see below).</li>
+    <li>You can stop using the optional AI-insight feature at any time; it does not affect core program generation.</li>
+  </ul>
+
+  <h2>Data Retention</h2>
+  <p>We retain your account and training data for as long as your account is active, so your history and progress charts remain available. If you delete your account, your data is removed from active systems within a reasonable period, subject to any residual copies in backups, which are cycled out over time.</p>
+
+  <h2>Children</h2>
+  <p>FORGE is not directed at children under 13 (or the minimum age required by your local law), and we do not knowingly collect data from them.</p>
+
+  <h2>Changes to This Policy</h2>
+  <p>If this policy changes, we'll update the "Last updated" date above. Continued use of FORGE after changes means you accept the updated policy.</p>
+
+  <h2>Contact</h2>
+  <p class="todo">TODO: add a real contact email here (e.g. privacy@yourdomain.com) before you publish this page — this is required for the policy to be valid in most jurisdictions.</p>
+</div>
+</body>
+</html>

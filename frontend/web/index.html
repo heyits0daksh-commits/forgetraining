@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07070A">
+<title>FORGE — Adaptive Prescription Engine</title>
+<link rel="manifest" href="/manifest.json">
+<!-- Makes "Add to Home Screen" on iPhone open as a real full-screen app
+     (no Safari address bar) instead of just a bookmarked webpage. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FORGE">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
+<link rel="icon" href="/assets/icons/icon-192.png">
+
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem('forge_theme');
+    var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+  }catch(e){ document.documentElement.setAttribute('data-theme','dark'); }
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="ambience" id="ambience" aria-hidden="true">
+  <div class="ambience-photo" id="ambiencePhotoA"></div>
+  <div class="ambience-photo" id="ambiencePhotoB"></div>
+  <svg class="enso" viewBox="0 0 200 200"><circle cx="100" cy="100" r="86" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="486 40" stroke-dashoffset="30"/></svg>
+  <div class="word" id="ambienceWord"></div>
+  <div class="sub" id="ambienceSub"></div>
+</div>
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>FORGE</div>
+      <div class="sub">Adaptive Prescription Engine</div>
+    </div>
+    <div class="headerRight">
+      <div class="mini-progress-spark" id="headerMiniSpark" title="Sessions logged, last 7 weeks" aria-hidden="true"></div>
+      <div class="settings-cluster">
+        <div class="cluster-group">
+          <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark theme" title="Toggle theme">
+            <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+            <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          </button>
+          <button type="button" class="theme-toggle unit-toggle" id="unitToggle" aria-label="Toggle kg/lb display" title="Toggle weight unit">
+            <span id="unitToggleLabel">KG</span>
+          </button>
+        </div>
+        <div class="cluster-divider" aria-hidden="true"></div>
+        <div class="cluster-group">
+          <button type="button" class="theme-toggle unit-toggle" id="accountBtn" aria-label="Profile" title="Profile">Profile</button>
+          <button type="button" class="theme-toggle unit-toggle cloud-auth-btn" id="cloudAuthBtn" aria-label="Log in or create an account" title="Log in or create an account">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10Z"/></svg>
+            <span id="cloudAuthBtnLabel">Log In</span>
+          </button>
+        </div>
+      </div>
+      <div class="cluster-group status-group">
+        <div class="notif-wrap" style="position:relative;">
+          <button type="button" class="notif-btn" id="notifBtn" aria-label="Notifications" aria-expanded="false" aria-controls="notifPanel" title="Notifications">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="notif-dot" id="notifDot" style="display:none;"></span>
+          </button>
+          <div class="notif-panel" id="notifPanel" style="display:none;"></div>
+        </div>
+        <div class="status" id="statusPill" title="Connecting…"><span class="dot"></span><span id="statusText">Connecting…</span></div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="mainnav" id="mainNav" style="display:none;">
+    <button data-nav="hero"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></button>
+    <button data-nav="program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M6 8h4M14 8h4M6 16h4M14 16h4"/></svg><span>Program</span></button>
+    <button data-nav="conditioning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg><span>Conditioning</span></button>
+    <button data-nav="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13a9 9 0 1 0 2-6.6"/><path d="M12 7v5l4 2"/></svg><span>History</span></button>
+    <button data-nav="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span>Calendar</span></button>
+    <button data-nav="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg><span>Progress</span></button>
+  </nav>
+
+  <!-- ================= WARNING / DISCLAIMER (first screen ever shown, once per device — see boot.js) ================= -->
+  <section class="screen active" id="screen-warning">
+    <div class="hero warning-hero">
+      <div class="eyebrow">Before You Start</div>
+      <h1>TRAIN <span>SMART.</span></h1>
+      <div class="callout danger warning-callout">
+        <b>Read this first.</b> FORGE prescribes training loads based on the numbers you enter —
+        it is not a medical device and does not replace a coach, physiotherapist, or doctor.
+        Consult a healthcare professional before starting any new training program, especially if
+        you are pregnant, recovering from injury, or managing a health condition. Stop immediately
+        if you feel pain, dizziness, or anything unusual, and always prioritize proper form over
+        the numbers on screen. You are responsible for training within your own limits.
+      </div>
+      <label class="check switch tos-row" id="tosRow">
+        <input type="checkbox" id="tosCheckbox">
+        <span>I have read and agree to the <a href="#" id="tosLink">Terms &amp; Conditions</a> and acknowledge FORGE is not a medical device.</span>
+      </label>
+      <div class="actions center">
+        <button class="btn" id="btnGetStarted" disabled>Get Started →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Terms & Conditions modal -->
+  <div class="modal-backdrop" id="tosModalBackdrop" style="display:none;">
+    <div class="modal tos-modal" role="dialog" aria-modal="true" aria-labelledby="tosModalTitle">
+      <div class="modal-head">
+        <h3 id="tosModalTitle">Terms &amp; Conditions</h3>
+        <button type="button" class="modal-close" id="tosModalClose" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body tos-body">
+        <p><b>1. Not medical advice.</b> FORGE is a training-prescription tool, not a medical device.
+        It does not diagnose, treat, or replace a doctor, physiotherapist, or certified coach.</p>
+        <p><b>2. Your responsibility.</b> You are responsible for training within your own limits,
+        using proper form, and stopping if you feel pain, dizziness, or anything unusual.</p>
+        <p><b>3. Consult a professional.</b> Speak with a healthcare professional before starting any
+        new training program, especially if you are pregnant, recovering from injury, or managing a
+        health condition.</p>
+        <p><b>4. Your data.</b> Profile and training data you enter is stored on this device to
+        personalize your prescriptions, as described in-app.</p>
+        <p><b>5. No liability.</b> FORGE and its creators are not liable for injury arising from use
+        of the app. Use is at your own risk.</p>
+      </div>
+      <div class="actions center" style="margin-top:4px;">
+        <button type="button" class="btn" id="tosModalAccept">I Understand</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reusable confirm dialog — replaces native confirm()/alert() so destructive
+       actions (delete session/program/workout) and inline errors match the
+       app's own look instead of an OS-styled popup. Driven by js/confirm-modal.js. -->
+  <div class="modal-backdrop" id="confirmModalBackdrop" style="display:none;">
+    <div class="modal confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <div class="modal-head">
+        <h3 id="confirmModalTitle">Are you sure?</h3>
+        <button type="button" class="modal-close" id="confirmModalClose" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="confirmModalBody"></div>
+      <div class="actions spread" style="margin-top:4px;">
+        <button type="button" class="btn secondary" id="confirmModalCancel">Cancel</button>
+        <button type="button" class="btn danger" id="confirmModalOk">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= HERO / HOMEPAGE (reachable any time via Home in the main nav; changes to a returning-user view once onboarding is complete — see home.js) ================= -->
+  <section class="screen" id="screen-hero">
+    <div class="hero-stage">
+      <div class="hero-mosaic" id="heroMosaic"></div>
+      <div class="hero-mosaic-overlay"></div>
+      <div class="hero hero--nobg" id="heroFirstRun">
+        <div class="eyebrow">Built For Your Sport</div>
+        <h1>TRAIN FOR<br>WHAT YOU <span>DO.</span></h1>
+        <p>Pick your discipline and FORGE builds the training around it — the right work,
+          in the right order, safe for the body you actually have.</p>
+        <div class="actions center">
+          <button class="btn" id="btnBuildStrength">Build Strength →</button>
+          <button class="btn secondary" id="btnConditioning">Conditioning →</button>
+        </div>
+        <div class="facts" id="heroFacts"></div>
+      </div>
+      <div class="hero hero--nobg hero-returning" id="heroReturning" style="display:none;">
+        <div class="eyebrow" id="heroReturningEyebrow">Welcome Back</div>
+        <h1 id="heroReturningTitle">TIME TO<br>BUILD YOUR <span>PROGRAM.</span></h1>
+        <p id="heroReturningSub">Your profile's already saved — pick up where you left off, or build a program.</p>
+        <div class="actions center">
+          <button class="btn" id="btnBuildProgram">Build Your Program →</button>
+          <button class="btn secondary" id="btnViewHistory">View History →</button>
+        </div>
+        <div class="facts" id="heroReturningFacts"></div>
+      </div>
+      <!-- Once a program has actually been saved, Home stops re-pitching the
+           whole "pick your discipline" onboarding (hero copy, stat bar, and
+           the full discipline tile grid below) every time - there's nothing
+           left to decide, so the only two things worth offering are picking
+           the saved program back up or starting a different one. See
+           updateHeroForReturningUser in home.js. -->
+      <div class="hero hero--nobg hero-has-program" id="heroHasProgram" style="display:none;">
+        <div class="eyebrow" id="heroProgramEyebrow">Welcome Back</div>
+        <h1>YOUR PROGRAM<br>IS <span>READY.</span></h1>
+        <p id="heroProgramSub">Jump back into your saved program, or build a new one.</p>
+        <div class="actions center">
+          <button class="btn" id="btnViewProgram">View Your Program →</button>
+          <button class="btn secondary" id="btnMakeNewProgram">Make A New Program →</button>
+        </div>
+      </div>
+    </div>
+    <!-- Quick Start: three taps -> matching ready-made plans (see quickstart.js). Hidden once a program is saved. -->
+    <div class="home-quickstart" id="homeQuickStart">
+      <div class="section-title">Quick Start — Get A Ready-Made Plan In 3 Taps</div>
+      <div class="qs-q"><b>1. What's your main goal?</b>
+        <div class="qs-row" id="qsGoal">
+          <button type="button" class="chip-btn" data-qs-goal="strength">Get stronger</button>
+          <button type="button" class="chip-btn" data-qs-goal="muscle">Build muscle</button>
+          <button type="button" class="chip-btn" data-qs-goal="both">Strength + size</button>
+          <button type="button" class="chip-btn" data-qs-goal="sport">Train for a sport</button>
+        </div>
+      </div>
+      <div class="qs-q"><b>2. How many days a week can you train?</b>
+        <div class="qs-row" id="qsDays">
+          <button type="button" class="chip-btn" data-qs-days="2">2</button>
+          <button type="button" class="chip-btn" data-qs-days="3">3</button>
+          <button type="button" class="chip-btn" data-qs-days="4">4</button>
+          <button type="button" class="chip-btn" data-qs-days="5">5+</button>
+        </div>
+      </div>
+      <div class="qs-q"><b>3. What equipment do you have?</b>
+        <div class="qs-row" id="qsEquip">
+          <button type="button" class="chip-btn" data-qs-equip="bodyweight">Bodyweight only</button>
+          <button type="button" class="chip-btn" data-qs-equip="home">Home gym</button>
+          <button type="button" class="chip-btn" data-qs-equip="full">Full gym</button>
+        </div>
+      </div>
+      <div id="qsResults" aria-live="polite"></div>
+    </div>
+    <div class="home-sports" id="homeSportsSection">
+      <div class="section-title">Every Discipline. One System.</div>
+      <div class="home-sports-scroll" id="homeSportsGrid"></div>
+    </div>
+  </section>
+
+  <!-- ================= CONDITIONING (standalone — aerobic/lactic only, no
+       lifting. Pick a sport, get its aerobic:lactic ratio + the manual's
+       aerobic and lactic session menus.) ================= -->
+  <section class="screen" id="screen-conditioning">
+    <div class="topline">
+      <div>
+        <div class="step">Conditioning</div>
+        <h2>Aerobic &amp; Lactic Plan</h2>
+        <p id="condSubtitle">Pick a discipline — the ratio and session menus below are conditioning only, no lifting.</p>
+      </div>
+    </div>
+    <div class="grid" id="condSportGrid"></div>
+    <div id="condBody"></div>
+  </section>
+
+  <!-- ================= SETUP WIZARD ================= -->
+  <section class="screen" id="screen-setup">
+    <div class="progress-dots" id="progressDots"></div>
+    <div class="topline">
+      <div>
+        <div class="step" id="wizStepLabel">Step 1 of 5</div>
+        <h2 id="wizTitle">Choose Discipline</h2>
+        <p id="wizSubtitle">Pick the sport you train — everything downstream is built around it.</p>
+      </div>
+    </div>
+
+
+    <!-- Step: discipline -->
+    <div class="wizard-step" data-step="discipline">
+      <div class="grid" id="disciplineGrid"></div>
+      <div class="card mode-toggle-card">
+        <label class="check switch" id="customModeToggleRow">
+          <input type="checkbox" id="customModeToggle">
+          <span><b>Custom Mode</b> — pick your own exercises, your own order, your own sets/reps/weight/rest/notes;
+          nothing is engine-generated. Safety checks (equipment/injury/strength/level) still run on whatever you pick,
+          but they only warn you now — an unsafe pick stays in your session with a warning attached instead of being removed.</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Step: readiness/recovery profile -->
+    <div class="wizard-step" data-step="readiness">
+      <div class="card">
+        <div class="grid2">
+          <div class="field">
+            <label>Experience Level</label>
+            <div class="radio-group" id="experienceGroup"></div>
+          </div>
+          <div class="field">
+            <label>Readiness <span class="micro">(calculated from how you're feeling below)</span></label>
+            <div class="readiness-readout-row">
+              <div class="readiness-big" id="readinessReadout">80%</div>
+              <div id="readinessSuggestionNote" class="micro" style="display:none;"></div>
+            </div>
+            <input type="range" id="readinessInput" min="1" max="100" value="80" style="display:none;">
+            <div id="deloadWarning" class="callout danger" style="display:none;margin-top:14px;">
+              <b>Deload will trigger.</b> Below 40% readiness the engine auto-shortens the session,
+              cuts volume, and locks out anything high-difficulty.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="field" style="margin-bottom:14px;"><label>How are you feeling today?</label></div>
+        <div class="quick-feel-row" id="quickFeelRow">
+          <button type="button" class="quick-feel-btn" data-preset="great">😄<span>Great</span></button>
+          <button type="button" class="quick-feel-btn selected" data-preset="good">🙂<span>Good</span></button>
+          <button type="button" class="quick-feel-btn" data-preset="okay">😐<span>Okay</span></button>
+          <button type="button" class="quick-feel-btn" data-preset="rough">😕<span>Rough</span></button>
+          <button type="button" class="quick-feel-btn" data-preset="terrible">😣<span>Terrible</span></button>
+        </div>
+        <!-- The 5 detailed sliders (sleep/soreness/stress/energy/motivation) still exist and
+             still drive the real readiness calculation (recalcReadinessFromRecovery in
+             wizard-setup.js) - they're just collapsed by default now behind the quick-tap
+             presets above, which set all 5 to a sensible combo in one tap
+             (see wireQuickFeelPresets). Opening this reveals the same fine-grained control
+             as before for anyone who wants it. -->
+        <details class="advanced-disclosure">
+          <summary>Adjust the details <span class="micro">(sleep, soreness, stress, energy, motivation individually)</span></summary>
+          <div class="recovery-grid" id="recoveryInputs" style="margin-top:18px;">
+            <div class="field">
+              <label>Sleep last night</label>
+              <div class="range-row">
+                <input type="range" id="riSleep" min="0" max="10" step="0.5" value="7">
+                <div class="range-readout" id="riSleepReadout">7h</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Muscle soreness</label>
+              <div class="range-row">
+                <input type="range" id="riSoreness" min="1" max="5" value="2">
+                <div class="range-readout" id="riSorenessReadout">2/5</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Stress</label>
+              <div class="range-row">
+                <input type="range" id="riStress" min="1" max="5" value="2">
+                <div class="range-readout" id="riStressReadout">2/5</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Energy</label>
+              <div class="range-row">
+                <input type="range" id="riEnergy" min="1" max="5" value="4">
+                <div class="range-readout" id="riEnergyReadout">4/5</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Motivation</label>
+              <div class="range-row">
+                <input type="range" id="riMotivation" min="1" max="5" value="4">
+                <div class="range-readout" id="riMotivationReadout">4/5</div>
+              </div>
+            </div>
+          </div>
+        </details>
+        <details class="advanced-disclosure">
+          <summary>Set readiness manually instead <span class="micro">(overrides the calculation above)</span></summary>
+          <div class="field" style="margin-top:18px;">
+            <div class="range-row">
+              <input type="range" id="readinessManualInput" min="1" max="100" value="80">
+              <div class="range-readout" id="readinessManualReadout">80%</div>
+            </div>
+          </div>
+        </details>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <details class="advanced-disclosure">
+          <summary>Fine-tune session <span class="micro">(optional — good defaults already set)</span></summary>
+          <div class="grid2" style="margin-top:18px;">
+            <div class="field">
+              <label>Conditioning Focus</label>
+              <select id="conditioningEmphasis"></select>
+              <div class="micro" id="conditioningEmphasisHint" style="margin-top:8px;"></div>
+            </div>
+            <div class="field">
+              <label>Session Length</label>
+              <select id="sessionDuration">
+                <option value="30">~30 min (short)</option>
+                <option value="45">~45 min</option>
+                <option value="50">~50 min</option>
+                <option value="60" selected>~60 min</option>
+                <option value="75">~75 min</option>
+                <option value="90">~90 min</option>
+                <option value="120">~120 min</option>
+                <option value="150">~150 min (long)</option>
+              </select>
+              <div class="micro" style="margin-top:8px;">More time buys more exercises, not a different session shape: 30 min is 2 compound lifts + 1 accessory; 45-74 min adds a skill drill, a power move, a second compound and a finisher; 75+ min adds a second "big lift"; 90-150 min keeps the same core lifts but adds accessory volume.</div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <!-- Step: equipment & injuries -->
+    <div class="wizard-step" data-step="equipment">
+      <div class="card">
+        <div class="field inj-browser-head" style="margin-bottom:10px;">
+          <label>Equipment Available</label>
+          <span class="micro inj-selected-count" id="eqSelectedCount">0 selected</span>
+        </div>
+        <div class="eq-preset-row" id="eqPresetRow">
+          <button type="button" class="chip-btn" data-eq-preset="bodyweight">Bodyweight Only</button>
+          <button type="button" class="chip-btn" data-eq-preset="home">Home Gym</button>
+          <button type="button" class="chip-btn" data-eq-preset="full">Full Commercial Gym</button>
+        </div>
+        <p class="eq-preset-hint">Or browse and fine-tune below — tap a category like <b>Bodyweight</b> or <b>Free Weights</b> to open it.</p>
+        <div class="inj-search-row">
+          <input type="text" id="eqSearchInput" placeholder="Search equipment — e.g. &quot;barbell&quot;, &quot;dumbbell&quot;, &quot;bands&quot;" autocomplete="off">
+          <button type="button" class="btn secondary small" id="eqClearBtn">Clear selected</button>
+        </div>
+        <div class="eq-groups" id="equipmentChecks"></div>
+        <div class="empty inj-no-results" id="eqNoResults" style="display:none;">No equipment matches that search.</div>
+      </div>
+    </div>
+
+    <!-- Step: injuries / joint constraints — split out from Equipment into
+         its own wizard step (was previously a second card stacked under
+         Equipment on the same step, sharing that step's Next button, which
+         made this card easy to miss entirely on a quick scroll). Now it's
+         its own page with its own Back/Next, plus a dedicated "No Injuries
+         — Skip" for the common case of nothing to flag - mirrors the
+         Program wizard's equivalent split/skip pattern (see
+         btnPgInjurySkip in program-wizard-steps.js). -->
+    <div class="wizard-step" data-step="injuries">
+      <div class="card">
+        <div class="field inj-browser-head">
+          <label>Active Injuries / Joint Constraints</label>
+          <span class="micro inj-selected-count" id="injSelectedCount">0 selected</span>
+        </div>
+        <div class="inj-mode-toggle" role="tablist" aria-label="Browse injuries by">
+          <button type="button" class="inj-mode-btn active" id="injModeJointBtn">By Joint</button>
+          <button type="button" class="inj-mode-btn" id="injModeMuscleBtn">By Muscle Group</button>
+        </div>
+        <div class="inj-joint-filters" id="injJointFilters"></div>
+        <div class="inj-search-row">
+          <input type="text" id="injSearchInput" placeholder="Search a joint, condition, or grade — e.g. &quot;ACL&quot;, &quot;shoulder&quot;, &quot;grade 2&quot;" autocomplete="off">
+          <button type="button" class="btn secondary small" id="injClearBtn">Clear selected</button>
+        </div>
+        <div class="inj-sections" id="injurySections"></div>
+        <div class="empty inj-no-results" id="injNoResults" style="display:none;">No injuries match that search.</div>
+        <div class="actions" style="justify-content:flex-end;margin-top:18px;">
+          <button type="button" class="btn skip-btn small" id="btnInjurySkip">No injuries — Skip →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step: custom exercise picker (custom mode only) -->
+    <div class="wizard-step" data-step="exercises">
+      <div class="card">
+        <div class="field"><label>Workout Name</label></div>
+        <input type="text" id="customWorkoutNameInput" placeholder="Custom Workout — e.g. &quot;Heavy Pull&quot;, &quot;Upper Strength&quot;" maxlength="80" autocomplete="off">
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="field"><label>Search Exercises</label></div>
+        <input type="text" id="exPickerSearch" placeholder="Search by name — e.g. &quot;row&quot;, &quot;squat&quot;, &quot;sled&quot;" autocomplete="off">
+        <div class="ex-picker-results" id="exPickerResults"></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="field inj-browser-head" style="margin-bottom:0;">
+          <label>Selected (<span id="exPickerCount">0</span>)</label>
+          <span class="micro">Drag the ⠿ handle, or use ↑/↓, to set the exact order FORGE will build the session in.</span>
+        </div>
+        <div id="exGroupBar"></div>
+        <div class="ex-picker-selected" id="exPickerSelected">
+          <div class="empty">Nothing picked yet — search above and add exercises.</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="field"><label>Warm-Up <span class="micro">(optional — kept separate from your working sets)</span></label></div>
+        <div class="warmup-add-row">
+          <input type="text" id="warmupNameInput" placeholder="e.g. &quot;5 min bike&quot;, &quot;Band external rotation&quot;" maxlength="120" autocomplete="off">
+          <input type="text" id="warmupDetailInput" placeholder="Detail — e.g. &quot;2×15&quot;" maxlength="120" autocomplete="off">
+          <button type="button" class="btn secondary small" id="warmupAddBtn">+ Add</button>
+        </div>
+        <div class="warmup-list" id="customWarmupList">
+          <div class="empty">No warm-up items yet — optional, e.g. "5 min bike" or "Band external rotation — 2×15".</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="field inj-browser-head" style="margin-bottom:10px;">
+          <label>Saved Custom Workouts</label>
+          <button type="button" class="btn secondary small" id="btnSaveCustomWorkout">💾 Save This Workout</button>
+        </div>
+        <div id="savedCustomWorkoutsList">
+          <div class="empty">No saved custom workouts yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step: biometrics / profile -->
+    <div class="wizard-step" data-step="biometrics">
+      <div class="card">
+        <div class="field"><label>Your Name</label><input type="text" id="bioName" placeholder="e.g. Alex" maxlength="60" autocomplete="name"></div>
+        <div class="grid3" style="margin-top:4px;">
+          <div class="field"><label>Sex</label>
+            <select id="bioSex">
+              <option value="">Prefer not to say</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Units</label>
+            <div class="inj-mode-toggle" role="tablist" aria-label="Preferred unit system" id="bioUnitToggle">
+              <button type="button" class="inj-mode-btn" id="bioUnitMetricBtn" data-unit="kg">Metric (kg / cm)</button>
+              <button type="button" class="inj-mode-btn" id="bioUnitImperialBtn" data-unit="lb">Imperial (lb / in)</button>
+            </div>
+          </div>
+        </div>
+        <div class="grid3" style="margin-top:4px;">
+          <div class="field"><label>Height (<span class="unit-label-height">cm</span>)</label><input type="number" id="bioHeight" value="175"></div>
+          <div class="field"><label>Weight (<span class="unit-label">kg</span>)</label><input type="number" id="bioWeight" class="unit-weight-input" value="75"></div>
+        </div>
+        <div class="callout blue" style="margin:14px 0 0;">
+          No maxes on hand? Leave the defaults below — the engine will simply keep you on
+          bodyweight-qualified work until you enter real numbers.
+        </div>
+        <!-- Pull-ups/push-ups/1RMs all keep sending their existing default values to
+             generate.js either way - shown open by default now (no more collapsed
+             toggle) so people notice these on the very first pass instead of
+             potentially never opening a details/summary. -->
+        <div class="field" style="margin-top:22px;"><label>Your numbers <span class="micro">(pull-ups, push-ups, 1RMs — optional, leave as-is if unsure)</span></label></div>
+        <div class="grid3">
+          <div class="field"><label>Max Pull-ups</label><input type="number" id="bioPullups" value="10" min="0"></div>
+          <div class="field"><label>Bench Press 1RM (<span class="unit-label">kg</span>)</label><input type="number" id="bioBench" class="unit-weight-input" value="80"></div>
+          <div class="field"><label>Squat 1RM (<span class="unit-label">kg</span>)</label><input type="number" id="bioSquat" class="unit-weight-input" value="100"></div>
+          <div class="field"><label>Deadlift 1RM (<span class="unit-label">kg</span>)</label><input type="number" id="bioDeadlift" class="unit-weight-input" value="120"></div>
+          <div class="field"><label>Max Push-ups</label><input type="number" id="bioPushups" value="40" min="0"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step: review -->
+    <div class="wizard-step" data-step="review">
+      <div class="card" id="reviewCard"></div>
+    </div>
+
+    <div class="actions spread">
+      <button class="btn secondary" id="btnWizBack">← Back</button>
+      <button class="btn" id="btnWizNext">Next →</button>
+    </div>
+  </section>
+
+  <!-- ================= LOADING ================= -->
+  <section class="screen" id="screen-loading">
+    <div class="loading-screen">
+      <div class="spinner"></div>
+      <p id="loadingText" role="status" aria-live="polite">Building your session…</p>
+      <div class="actions center" style="margin-top:18px;"><button type="button" class="btn secondary small" id="btnCancelLoading">Cancel</button></div>
+    </div>
+  </section>
+
+  <!-- ================= RESULTS ================= -->
+  <section class="screen" id="screen-results">
+    <div class="topline">
+      <div>
+        <div class="step" id="resultStep">Session Ready</div>
+        <h2 id="resultTitle">Prescription</h2>
+        <p id="resultSubtitle"></p>
+      </div>
+      <div class="actions" style="margin:0;flex-wrap:wrap;gap:10px;align-items:center;">
+        <label style="font-size:12px;">Soreness after
+          <select id="postSorenessInput"><option value="">–</option><option value="1">1 none</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5 very sore</option></select>
+        </label>
+        <label style="font-size:12px;">Fatigue
+          <select id="postFatigueInput"><option value="">–</option><option value="1">1 fresh</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5 wiped out</option></select>
+        </label>
+        <button class="btn secondary" id="btnDiscard">Discard</button>
+        <button class="btn green" id="btnSaveSession">Finish &amp; Save Session</button>
+      </div>
+    </div>
+    <p class="micro" style="margin-top:-6px;margin-bottom:14px;">Logging soreness/fatigue here feeds the <b>Readiness</b> suggestion on your next session.</p>
+
+    <div id="resultBody"></div>
+
+    <footer class="note">FORGE Knowledge Graph Engine — output is a prescription, not a diagnosis. Stop any movement that causes sharp or worsening pain.
+      <div style="margin-top:8px;">
+        <a href="disclaimer.html" style="color:var(--muted-dim);">Medical Disclaimer</a>
+        &nbsp;·&nbsp;
+        <a href="privacy.html" style="color:var(--muted-dim);">Privacy Policy</a>
+        &nbsp;·&nbsp;
+        <a href="terms.html" style="color:var(--muted-dim);">Terms of Service</a>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ================= PROGRAM BUILDER ================= -->
+  <section class="screen" id="screen-program">
+    <div id="pgWizardChrome">
+    <div class="progress-dots" id="pgProgressDots"></div>
+    <div class="topline">
+      <div>
+        <div class="step" id="pgWizStepLabel">Step 1 of 5</div>
+        <h2 id="pgWizTitle">Program Basics</h2>
+        <p id="pgWizSubtitle">Same engine that compiles a single session, run once per day across a full mesocycle.</p>
+      </div>
+      <button type="button" class="btn secondary small" id="btnOpenSavedPrograms" style="align-self:flex-start;">My Saved Programs</button>
+    </div>
+
+    <!-- Step: basics -->
+    <div class="pg-step" data-pg-step="basics">
+      <div class="card">
+        <div class="grid2">
+          <!-- Sport was already chosen on the Train wizard's discipline step
+               before the Program Builder is ever reachable (see the
+               `if(!S.sport) return;` gate in injury-browser.js and
+               jumpToDiscipline in home.js) - re-asking it here just repeats
+               a question that's already answered. Shown read-only instead
+               of re-asked; the real #pgSport select stays in the DOM
+               (hidden) so every other bit of code that reads its .value
+               keeps working unchanged. -->
+          <div class="field"><label>Discipline / Sport</label><div class="readonly-field" id="pgSportDisplay"></div></div>
+          <div class="field"><label>Experience Level</label><select id="pgExperience"></select></div>
+        </div>
+        <div class="grid2">
+          <div class="field" id="pgSplitField"><label>Preferred Split</label><select id="pgSplit"></select></div>
+        </div>
+        <!-- Primary Goal: no longer asked here either - the engine defaults
+             it to "General Fitness" behind the scenes, kept as a hidden
+             select purely so generateProgram()'s payload and the Review
+             step still have a value to read. -->
+        <select id="pgGoal" style="display:none;" aria-hidden="true"></select>
+        <select id="pgSport" style="display:none;" aria-hidden="true"></select>
+        <div id="pgSplitInfo" class="callout" style="display:none;margin-top:4px;"></div>
+        <div class="field" style="margin-top:4px;">
+          <label>Training Phase (optional)</label>
+          <select id="pgTrainingPhase"></select>
+          <div class="micro" id="pgTrainingPhaseHint" style="margin-top:8px;"></div>
+        </div>
+      </div>
+      <div class="card mode-toggle-card">
+        <label class="check switch" id="pgCustomModeToggleRow">
+          <input type="checkbox" id="pgCustomModeToggle">
+          <span><b>Custom Program</b> — build your own days instead of a preset split: search and add exactly
+          which exercises belong on each day. The engine still handles the split's own job every week —
+          progressive overload, deload timing, power/hypertrophy rotation, and equipment/injury/strength/level
+          safety checks on whatever you pick (an unsafe pick stays in with a warning, it's never silently
+          dropped) — it just doesn't choose the exercises for you.</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Step: schedule & intensity -->
+    <div class="pg-step" data-pg-step="schedule">
+      <div class="card">
+        <div class="grid3">
+          <div class="field"><label>Days Per Week</label><input type="number" id="pgDays" min="1" max="7" value="4"></div>
+          <div class="field"><label>Program Length (weeks)</label><input type="number" id="pgWeeks" min="1" max="16" value="4"></div>
+          <div class="field"><label>Session Duration (minutes)</label><input type="number" id="pgDuration" min="15" max="180" value="60" step="5"></div>
+        </div>
+        <div class="field" style="margin-top:4px;">
+          <label>Readiness <span class="micro">(calculated from how you're feeling below)</span></label>
+          <div class="readiness-readout-row">
+            <div class="readiness-big" id="pgReadinessReadout">80%</div>
+            <div id="pgReadinessSuggestionNote" class="micro" style="display:none;"></div>
+          </div>
+          <input type="range" id="pgReadiness" min="1" max="100" value="80" style="display:none;">
+        </div>
+        <details class="advanced-disclosure">
+          <summary>Conditioning focus <span class="micro">(optional — defaults to a balanced mix)</span></summary>
+          <div class="field" style="margin-top:18px;">
+            <select id="pgConditioningEmphasis"></select>
+            <div class="micro" id="pgConditioningEmphasisHint" style="margin-top:8px;"></div>
+          </div>
+        </details>
+      </div>
+      <div class="card feel-card-emphasis" style="margin-top:16px;">
+        <div class="field" style="margin-bottom:14px;"><label>How are you feeling today?</label></div>
+        <div class="recovery-grid">
+          <div class="field">
+            <label>Sleep last night</label>
+            <div class="range-row">
+              <input type="range" id="pgRiSleep" min="0" max="10" step="0.5" value="7">
+              <div class="range-readout" id="pgRiSleepReadout">7h</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Muscle soreness</label>
+            <div class="range-row">
+              <input type="range" id="pgRiSoreness" min="1" max="5" value="2">
+              <div class="range-readout" id="pgRiSorenessReadout">2/5</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Stress</label>
+            <div class="range-row">
+              <input type="range" id="pgRiStress" min="1" max="5" value="2">
+              <div class="range-readout" id="pgRiStressReadout">2/5</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Energy</label>
+            <div class="range-row">
+              <input type="range" id="pgRiEnergy" min="1" max="5" value="4">
+              <div class="range-readout" id="pgRiEnergyReadout">4/5</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Motivation</label>
+            <div class="range-row">
+              <input type="range" id="pgRiMotivation" min="1" max="5" value="4">
+              <div class="range-readout" id="pgRiMotivationReadout">4/5</div>
+            </div>
+          </div>
+        </div>
+        <details class="advanced-disclosure">
+          <summary>Set readiness manually instead <span class="micro">(overrides the calculation above)</span></summary>
+          <div class="field" style="margin-top:18px;">
+            <div class="range-row">
+              <input type="range" id="pgReadinessManualInput" min="1" max="100" value="80">
+              <div class="range-readout" id="pgReadinessManualReadout">80%</div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <!-- Step: sport focus — dynamic per-discipline question(s) (Rugby's
+         Positional Emphasis, MMA's Fight-Style Emphasis, Powerlifting's
+         Periodization Style, ...) plus any matching FORGE S&C templates to
+         browse, both driven entirely by whatever the "basics" step's
+         Discipline/Sport select currently holds - see
+         renderPgSportFocusStep in program-wizard-steps.js. Only reachable
+         at all when getProgramWizardStepIds (weight-unit.js) finds
+         something to show for the chosen sport. -->
+    <div class="pg-step" data-pg-step="sportFocus">
+      <div class="card" id="pgSportFocusQuestionsCard" style="display:none;">
+        <div class="field"><label id="pgSportFocusHeading">Discipline questions</label></div>
+        <div class="grid2" id="pgSportFocusQuestions"></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="field" style="margin-bottom:6px;">
+          <label>Matching FORGE S&amp;C Templates</label>
+          <span class="micro">The best match for your sport/level is picked automatically — Generate will build this exact coach-authored template (swapped only where it fails your equipment/injury checks). Pick a different one below, or choose "Build with the engine instead" to skip templates entirely.</span>
+        </div>
+        <div id="pgSportFocusTemplates"></div>
+        <div class="empty" id="pgSportFocusNoTemplates" style="display:none;">No matching templates for this combination — the engine will build you a full program on Review instead.</div>
+      </div>
+    </div>
+
+    <!-- Step: equipment -->
+    <div class="pg-step" data-pg-step="equipment">
+      <div class="card">
+        <div class="field inj-browser-head" style="margin-bottom:10px;">
+          <label>Equipment Available</label>
+          <span class="micro inj-selected-count" id="pgEqSelectedCount">0 selected</span>
+        </div>
+        <div class="eq-preset-row" id="pgEqPresetRow">
+          <button type="button" class="chip-btn" data-eq-preset="bodyweight">Bodyweight Only</button>
+          <button type="button" class="chip-btn" data-eq-preset="home">Home Gym</button>
+          <button type="button" class="chip-btn" data-eq-preset="full">Full Commercial Gym</button>
+        </div>
+        <p class="eq-preset-hint">Or browse and fine-tune below — tap a category like <b>Bodyweight</b> or <b>Free Weights</b> to open it.</p>
+        <div class="inj-search-row">
+          <input type="text" id="pgEqSearchInput" placeholder="Search equipment — e.g. &quot;barbell&quot;, &quot;dumbbell&quot;, &quot;bands&quot;" autocomplete="off">
+          <button type="button" class="btn secondary small" id="pgEqClearBtn">Clear selected</button>
+        </div>
+        <div class="eq-groups" id="pgEquipmentChecks"></div>
+        <div class="empty inj-no-results" id="pgEqNoResults" style="display:none;">No equipment matches that search.</div>
+      </div>
+    </div>
+
+    <!-- Step: injuries / joint constraints — its own page (was a second
+         card stacked under Equipment on the same step), same split as the
+         Train wizard's equivalent (see data-step="injuries" above). -->
+    <div class="pg-step" data-pg-step="injuries">
+      <div class="card">
+        <div class="field inj-browser-head">
+          <label>Active Injuries / Joint Constraints</label>
+          <span class="micro inj-selected-count" id="pgInjSelectedCount">0 selected</span>
+        </div>
+        <div class="inj-mode-toggle" role="tablist" aria-label="Browse injuries by">
+          <button type="button" class="inj-mode-btn active" id="pgInjModeJointBtn">By Joint</button>
+          <button type="button" class="inj-mode-btn" id="pgInjModeMuscleBtn">By Muscle Group</button>
+        </div>
+        <div class="inj-joint-filters" id="pgInjJointFilters"></div>
+        <div class="inj-search-row">
+          <input type="text" id="pgInjSearchInput" placeholder="Search a joint, condition, or grade — e.g. &quot;ACL&quot;, &quot;shoulder&quot;, &quot;grade 2&quot;" autocomplete="off">
+          <button type="button" class="btn secondary small" id="pgInjClearBtn">Clear selected</button>
+        </div>
+        <div class="inj-sections" id="pgInjurySections"></div>
+        <div class="empty inj-no-results" id="pgInjNoResults" style="display:none;">No injuries match that search.</div>
+        <div class="actions" style="justify-content:flex-end;margin-top:18px;">
+          <button type="button" class="btn skip-btn small" id="btnPgInjurySkip">No injuries — Skip →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step: biometrics — only ever shown when we don't already have real
+         numbers from the Train wizard's Profile step (see
+         prefillProgramBiometricsFromProfile / getProgramWizardStepIds in
+         program-wizard-steps.js and weight-unit.js). -->
+    <div class="pg-step" data-pg-step="biometrics">
+      <div class="card">
+        <div class="callout blue" style="margin:0 0 18px;">
+          Your experience level alone doesn't unlock barbell/loaded work — the engine needs
+          real numbers to know what you can safely handle. Left at 0, the engine keeps you on
+          pure regressions (negatives, rows, etc.) no matter what level you picked above.
+        </div>
+        <div class="grid3">
+          <div class="field"><label>Height (cm)</label><input type="number" id="pgBioHeight" value="175"></div>
+          <div class="field"><label>Weight (<span class="unit-label">kg</span>)</label><input type="number" id="pgBioWeight" class="unit-weight-input" value="75"></div>
+          <div class="field"><label>Max Pull-ups</label><input type="number" id="pgBioPullups" value="0" min="0"></div>
+          <div class="field"><label>Bench Press 1RM (<span class="unit-label">kg</span>)</label><input type="number" id="pgBioBench" class="unit-weight-input" value="0" min="0"></div>
+          <div class="field"><label>Squat 1RM (<span class="unit-label">kg</span>)</label><input type="number" id="pgBioSquat" class="unit-weight-input" value="0" min="0"></div>
+          <div class="field"><label>Deadlift 1RM (<span class="unit-label">kg</span>)</label><input type="number" id="pgBioDeadlift" class="unit-weight-input" value="0" min="0"></div>
+          <div class="field"><label>Max Push-ups</label><input type="number" id="pgBioPushups" value="0" min="0"></div>
+          <div class="field"><label>Gender (optional)</label>
+            <select id="pgBioSex">
+              <option value="">Prefer not to say</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step: custom program days (custom mode only) -->
+    <div class="pg-step" data-pg-step="customDays">
+      <div class="card">
+        <div class="field inj-browser-head" style="margin-bottom:10px;">
+          <label>Your Days</label>
+          <button type="button" class="btn secondary small" id="btnPgAddCustomDay">+ Add Day</button>
+        </div>
+        <div class="micro" style="margin-bottom:10px;">
+          These repeat to fill your <span id="pgCustomDayRepeatNote">4</span> days/week — e.g. 2 days
+          here (Day A/Day B) over a 4-day week alternates Day A, Day B, Day A, Day B, exactly like a
+          preset split's own day rotation.
+        </div>
+        <div class="pg-custom-day-tabs" id="pgCustomDayTabs"></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="field"><label>Day Label</label></div>
+        <input type="text" id="pgCustomDayLabelInput" placeholder="e.g. &quot;Push Day&quot;, &quot;Legs&quot;" maxlength="60" autocomplete="off">
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="field"><label>Search Exercises</label></div>
+        <input type="text" id="pgExPickerSearch" placeholder="Search by name — e.g. &quot;row&quot;, &quot;squat&quot;, &quot;sled&quot;" autocomplete="off">
+        <div class="ex-picker-results" id="pgExPickerResults"></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="field inj-browser-head" style="margin-bottom:0;">
+          <label>This Day's Exercises (<span id="pgExPickerCount">0</span>)</label>
+          <span class="micro">Drag the ⠿ handle, or use ↑/↓, to set the exact order FORGE will build this day in.</span>
+        </div>
+        <div class="ex-picker-selected" id="pgExPickerSelected">
+          <div class="empty">Nothing picked yet for this day — search above and add exercises.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step: review -->
+    <div class="pg-step" data-pg-step="review">
+      <div class="card" id="pgReviewCard"></div>
+    </div>
+
+    <div class="actions spread" id="pgWizActionsBar">
+      <button class="btn secondary" id="btnPgWizBack">← Back</button>
+      <button class="btn" id="btnPgWizNext">Next →</button>
+    </div>
+    </div><!-- /pgWizardChrome -->
+
+    <div id="programResult"></div>
+  </section>
+
+  <!-- ================= HISTORY ================= -->
+  <section class="screen" id="screen-history">
+    <div class="topline">
+      <div>
+        <div class="step">Logbook</div>
+        <h2>Session History</h2>
+        <p>Sessions are saved on this device, and synced to your account when you're logged in.</p>
+      </div>
+      <div class="actions" style="margin:0;">
+        <button class="btn secondary" id="btnEditProfile">Edit Profile</button>
+        <button class="btn" id="btnHistoryTrain">+ New Session</button>
+      </div>
+    </div>
+    <div id="trainingPatternsPanel" class="patterns-panel"></div>
+    <div id="historyBody"></div>
+  </section>
+
+  <!-- ================= CALENDAR ================= -->
+  <section class="screen" id="screen-calendar">
+    <div class="topline">
+      <div>
+        <div class="step">Training Log</div>
+        <h2>Calendar</h2>
+        <p>Green = logged session &nbsp;·&nbsp; Blue = deload day</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cal-header">
+        <h3 id="calMonthLabel" aria-live="polite">—</h3>
+        <div class="cal-nav">
+          <button id="calPrev" aria-label="Previous month" title="Previous month">‹</button>
+          <button id="calNext" aria-label="Next month" title="Next month">›</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <div class="cal-details" id="calDetails"></div>
+  </section>
+
+  <!-- ================= PROGRESS ================= -->
+  <section class="screen" id="screen-progress">
+    <div class="topline">
+      <div>
+        <div class="step">Trends</div>
+        <h2>Progress</h2>
+        <p>Everything you've logged, rolled up into trends.</p>
+      </div>
+    </div>
+    <div id="trendsDashboard"></div>
+    <div class="trend-section-title" style="margin-top:8px;">By Exercise</div>
+    <p class="trend-section-sub">Best logged set per session, for any exercise you've tracked.</p>
+    <div id="progressPageBody"></div>
+  </section>
+
+  <!-- ================= ERROR ================= -->
+  <section class="screen" id="screen-error">
+    <div class="error-box">
+      <h3>Can't connect right now</h3>
+      <p>FORGE couldn't reach its server. Check your internet connection, then try again — if the app was idle, the server can take up to a minute to wake up.</p>
+      <div class="actions center"><button class="btn gold" id="btnRetry">Try Again</button></div>
+      <details class="error-tech">
+        <summary>Technical details</summary>
+        <p>The API at <code id="apiBaseDisplay"></code> didn't respond. Running locally? Start it with <code>python -m backend.main</code> from the project root.</p>
+      </details>
+    </div>
+  </section>
+
+</div>
+
+<!-- exercise knowledge-graph modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-content" id="modalContent" role="dialog" aria-modal="true" aria-label="Details"></div>
+</div>
+
+<!-- fire-and-forget confirmation toasts (e.g. session synced/failed) -->
+<div class="toast-wrap" id="toastWrap" role="status" aria-live="polite"></div>
+
+<script src="js/theme-toggle.js"></script>
+<script src="js/config.js"></script>
+<script src="js/accounts.js"></script>
+<script src="js/weight-unit.js"></script>
+<script src="js/unit-toggle.js"></script>
+<script src="js/confirm-modal.js"></script>
+<script src="js/nav-control.js"></script>
+<script src="js/boot.js"></script>
+<script src="js/home.js"></script>
+<script src="js/quickstart.js"></script>
+<script src="js/sport-switch.js"></script>
+<script src="js/conditioning.js"></script>
+<script src="js/program-builder.js"></script>
+<script src="js/program-wizard-steps.js"></script>
+<script src="js/drag-reorder.js"></script>
+<script src="js/program-custom-days.js"></script>
+<script src="js/autoregulation.js"></script>
+<script src="js/wizard-setup.js"></script>
+<script src="js/custom-mode-picker.js"></script>
+<script src="js/custom-workout-builder.js"></script>
+<script src="js/injury-browser.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/generate.js"></script>
+<script src="js/results-render.js"></script>
+<script src="js/exercise-editing.js"></script>
+<script src="js/workout-swap.js"></script>
+<script src="js/pr-suggestion.js"></script>
+<script src="js/exercise-modal.js"></script>
+<script src="js/history.js"></script>
+<script src="js/header-widgets.js"></script>
+<script src="js/vendor/chart.min.js"></script>
+<script src="js/progress-chart.js"></script>
+<script src="js/trends-dashboard.js"></script>
+<script src="js/progress-page.js"></script>
+<script src="js/training-patterns.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/capacitor-native.js"></script>
+<script src="js/a11y.js"></script>
+<script>
+// Registers the service worker so browsers treat this as an installable
+// app (see service-worker.js). Guarded so it never breaks the local
+// file:// double-click workflow, where service workers aren't available.
+if('serviceWorker' in navigator && location.protocol !== 'file:'){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/service-worker.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
