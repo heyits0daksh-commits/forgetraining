@@ -1,0 +1,27 @@
+databases:
+  - name: forge-db
+    plan: free
+    databaseName: forge
+    user: forge
+
+services:
+  - type: web
+    name: forge
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/metadata
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: forge-db
+          property: connectionString
+      - key: YOUTUBE_API_KEY
+        sync: false
